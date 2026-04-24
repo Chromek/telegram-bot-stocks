@@ -8,6 +8,10 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+print(f"DEBUG: Czy TOKEN został wczytany? {'TAK' if TOKEN else 'NIE'}")
+print(f"DEBUG: Czy CHAT_ID został wczytany? {'TAK' if CHAT_ID else 'NIE'}")
+if CHAT_ID:
+    print(f"DEBUG: CHAT_ID zaczyna się od: {str(CHAT_ID)[:3]}...")
 
 TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
