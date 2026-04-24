@@ -1,22 +1,21 @@
 FROM python:3.11-slim
 
-# Instalacja niezbędnych narzędzi systemowych
+# Instalacja narzędzi (bez gita, żeby było lżej i bez błędów)
 RUN apt-get update && apt-get install -y \
     build-essential \
     gcc \
-    git \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Najpierw instalujemy podstawowe zależności
+# Aktualizacja pip i instalacja bazy
 RUN pip install --upgrade pip
 RUN pip install pandas requests yfinance
 
-# INSTALACJA PANDAS-TA BEZPOŚREDNIO Z REPOZYTORIUM (Omija błąd wersji)
-RUN pip install git+https://github.com/twopirllc/pandas-ta.git@development
+# INSTALACJA PANDAS-TA Z PLIKU ZIP (Omija błędy Git'a)
+RUN pip install https://github.com/twopirllc/pandas-ta/archive/refs/heads/main.zip
 
-# Kopiujemy resztę plików
+# Kopiujemy resztę plików (Twój skrypt)
 COPY . .
 
 CMD ["python", "bot.py"]
