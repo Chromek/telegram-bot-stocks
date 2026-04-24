@@ -1,5 +1,4 @@
 yfinance
 pandas
-pandas_ta
 requests
-python-dotenv
+https://github.com/twopirllc/pandas-ta/archive/master.zip
