@@ -7,14 +7,20 @@ import requests
 import os
 from dotenv import load_dotenv
 
+# 1. ŁADOWANIE KONFIGURACJI
 load_dotenv()
+
+# PRZYPISANIE - To musi być przed printami!
+TOKEN = os.getenv("TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
+
+# DEBUG - Sprawdzamy czy Railway widzi zmienne
+print(f"--- DIAGNOSTYKA STARTU ---")
 print(f"DEBUG: Czy TOKEN został wczytany? {'TAK' if TOKEN else 'NIE'}")
 print(f"DEBUG: Czy CHAT_ID został wczytany? {'TAK' if CHAT_ID else 'NIE'}")
 if CHAT_ID:
     print(f"DEBUG: CHAT_ID zaczyna się od: {str(CHAT_ID)[:3]}...")
-
-TOKEN = os.getenv("TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
+print(f"--------------------------")
 
 WATCHLIST = [
     "PZU.WA", "PKO.WA", "PEO.WA", "LPP.WA", "BDX.WA", "PKN.WA", "XTB.WA",
@@ -23,8 +29,11 @@ WATCHLIST = [
 
 session = requests.Session()
 
-
 def send_msg(text: str):
+    if not TOKEN or not CHAT_ID:
+        print("[Błąd] Brak TOKENA lub CHAT_ID w zmiennych środowiskowych!")
+        return
+        
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {
         "chat_id": CHAT_ID,
@@ -32,10 +41,11 @@ def send_msg(text: str):
         "parse_mode": "Markdown"
     }
     try:
-        session.post(url, data=payload, timeout=10)
+        response = session.post(url, data=payload, timeout=10)
+        if response.status_code != 200:
+            print(f"[Błąd Telegrama] Status: {response.status_code}, Treść: {response.text}")
     except Exception as e:
         print(f"[Błąd wysyłki] {e}")
-
 
 def download_data(ticker: str):
     try:
@@ -48,18 +58,19 @@ def download_data(ticker: str):
         print(f"[{ticker}] Błąd pobierania: {e}")
         return None
 
-
 def analyze_ticker(ticker: str):
     df = download_data(ticker)
     if df is None or len(df) < 200:
         return None
 
+    # Obliczanie wskaźników
     df["SMA200"] = ta.sma(df["Close"], length=200)
     df["RSI"] = ta.rsi(df["Close"], length=14)
-
+    
     macd = ta.macd(df["Close"])
-    df["MACD"] = macd["MACD_12_26_9"]
-    df["SIGNAL"] = macd["MACDs_12_26_9"]
+    # Zabezpieczenie przed różnymi nazwami kolumn w MACD
+    df["MACD"] = macd.iloc[:, 0]
+    df["SIGNAL"] = macd.iloc[:, 2]
 
     curr = df.iloc[-1]
     prev = df.iloc[-2]
@@ -72,36 +83,25 @@ def analyze_ticker(ticker: str):
     prev_macd = float(prev["MACD"])
     prev_signal = float(prev["SIGNAL"])
 
-    # KUPNO
-    if (
-        price > sma200 and
-        macd_line > signal_line and prev_macd <= prev_signal and
-        rsi > 40
-    ):
-        return (
-            f"🟢 *KUPNO: {ticker}*\n"
-            f"Cena: {price:.2f}\n"
-            f"RSI: {rsi:.1f}\n"
-            f"MACD cross: bullish\n"
-            f"Trend: powyżej SMA200"
-        )
+    # LOGIKA KUPNA
+    if (price > sma200 and 
+        macd_line > signal_line and prev_macd <= prev_signal and 
+        rsi > 40):
+        return (f"🟢 *KUPNO: {ticker}*\n"
+                f"Cena: {price:.2f}\n"
+                f"RSI: {rsi:.1f}\n"
+                f"Trend: powyżej SMA200")
 
-    # SPRZEDAŻ
-    if (
-        price < sma200 and
-        macd_line < signal_line and prev_macd >= prev_signal and
-        rsi < 60
-    ):
-        return (
-            f"🔴 *SPRZEDAŻ: {ticker}*\n"
-            f"Cena: {price:.2f}\n"
-            f"RSI: {rsi:.1f}\n"
-            f"MACD cross: bearish\n"
-            f"Trend: poniżej SMA200"
-        )
+    # LOGIKA SPRZEDAŻY
+    if (price < sma200 and 
+        macd_line < signal_line and prev_macd >= prev_signal and 
+        rsi < 60):
+        return (f"🔴 *SPRZEDAŻ: {ticker}*\n"
+                f"Cena: {price:.2f}\n"
+                f"RSI: {rsi:.1f}\n"
+                f"Trend: poniżej SMA200")
 
     return None
-
 
 def check_market(label: str):
     print(f"\n--- Skanowanie: {label} ---")
@@ -118,27 +118,36 @@ def check_market(label: str):
     if signals:
         msg = f"📊 *{label}*\n\n" + "\n\n".join(signals)
     else:
-        msg = f"✅ *{label}*\nBrak nowych sygnałów."
+        msg = f"✅ *{label}*\nBrak nowych sygnałów technicznych."
 
     send_msg(msg)
 
-
 # --- PĘTLA GŁÓWNA ---
-last_run = {"morning": None, "evening": None}
+if __name__ == "__main__":
+    last_run = {"morning": None, "evening": None}
+    
+    # TEST NATYCHMIASTOWY - Wyśle raport od razu po starcie bota na Railway
+    print("Uruchamiam raport testowy...")
+    check_market("RAPORT STARTOWY (TEST)")
 
-print("Bot działa na Railway i czeka na 08:30 oraz 18:00 (czas lokalny)...")
+    print("Bot jest aktywny i czeka na godziny raportów (UTC)...")
 
-while True:
-    now = datetime.now()
-    current_time = now.strftime("%H:%M")
-    print("DEBUG:", current_time)
+    while True:
+        now = datetime.now()
+        current_time = now.strftime("%H:%M")
+        
+        # Raport poranny (08:30 czasu polskiego = 06:30 UTC)
+        if current_time == "06:30" and last_run["morning"] != now.date():
+            check_market("RAPORT PORANNY")
+            last_run["morning"] = now.date()
 
-    if current_time == "13:17" and last_run["morning"] != now.date():
-        check_market("RAPORT PORANNY")
-        last_run["morning"] = now.date()
+        # Raport wieczorny (18:00 czasu polskiego = 16:00 UTC)
+        if current_time == "16:00" and last_run["evening"] != now.date():
+            check_market("RAPORT WIECZORNY")
+            last_run["evening"] = now.date()
 
-    if current_time == "16:00" and last_run["evening"] != now.date():
-        check_market("RAPORT WIECZORNY")
-        last_run["evening"] = now.date()
-
-    time.sleep(5)
+        # Co 30 sekund wypisz czas do logów, żeby wiedzieć, że bot żyje
+        if now.second % 30 == 0:
+            print(f"Czuwam... Czas serwera: {current_time}")
+            
+        time.sleep(1)
