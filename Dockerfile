@@ -12,7 +12,8 @@ WORKDIR /app
 RUN pip install --upgrade pip
 
 # Czysta instalacja wszystkich potrzebnych bibliotek
-RUN pip install pandas requests yfinance pandas-ta
+RUN pip install pandas requests yfinance pandas-ta python-dotenv
+
 
 # Kopiujemy resztę plików (Twój skrypt)
 COPY . .
