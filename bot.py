@@ -14,10 +14,17 @@ CHAT_ID = os.getenv("CHAT_ID")
 
 # LISTA SPÓŁEK (Możesz tu dopisywać własne)
 WATCHLIST = [
-    # GPW (Polska)
+    # TWOJE NOWE WYBORY - POLSKA
+    "KTY.WA", "CBF.WA", "TXT.WA", "GPW.WA", "IMS.WA", "SNT.WA", "ACP.WA",
+    
+    # TWOJE NOWE WYBORY - ZAGRANICA & KRYPTO
+    "WDC", "TSM", "O", "BTC-USD", "ETH-USD",
+    
+    # GPW - POZOSTAŁE
     "PZU.WA", "PKO.WA", "PEO.WA", "LPP.WA", "BDX.WA", "PKN.WA", "XTB.WA", 
-    "KGH.WA", "DNP.WA", "CDR.WA", "JSW.WA", "ALE.WA", "KRU.WA",
-    # USA / ETF
+    "KGH.WA", "DNP.WA", "CDR.WA", "JSW.WA", "ALE.WA", "KRU.WA", "SPL.WA",
+    
+    # USA / ETF - POZOSTAŁE
     "NVDA", "MSFT", "AAPL", "AMD", "TSLA", "META", "GOOGL", "AMZN",
     "VOO", "QQQ", "GLD", "BITO"
 ]
