@@ -129,7 +129,7 @@ while True:
     current_time = now.strftime("%H:%M")
     print("DEBUG:", current_time)
 
-    if current_time == "08:30" and last_run["morning"] != now.date():
+    if current_time == "11:06" and last_run["morning"] != now.date():
         check_market("RAPORT PORANNY")
         last_run["morning"] = now.date()
 
