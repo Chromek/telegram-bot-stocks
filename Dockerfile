@@ -1,19 +1,17 @@
-# Używamy nowszej i pełniejszej wersji Pythona
 FROM python:3.11
 
-# Instalujemy narzędzia niezbędne do budowania pakietów (często wymagane przez TA-Lib/Pandas)
 RUN apt-get update && apt-get install -y build-essential gcc
 
 WORKDIR /app
 
-# Najpierw kopiujemy requirements
+# Aktualizacja instalatora pip
+RUN pip install --upgrade pip
+
 COPY requirements.txt .
 
-# Instalujemy pakiety
+# Instalacja z dodatkowym parametrem, żeby widzieć błędy w logach
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Kopiujemy resztę plików (twój bot.py)
 COPY . .
 
-# Komenda startowa
 CMD ["python", "bot.py"]
